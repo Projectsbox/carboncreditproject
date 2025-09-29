@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Shield, Globe, TrendingUp, Users, Lock, Zap, CheckCircle, ArrowRight, Menu, X, Download, Share2, BarChart3 } from 'lucide-react';
 
