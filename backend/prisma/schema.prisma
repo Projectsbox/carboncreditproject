@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  CREATOR
+  VALIDATOR
+  BUYER
+  ADMIN
+}
+
+enum ProjectType {
+  REFORESTATION
+  RENEWABLE_ENERGY
+  ENERGY_EFFICIENCY
+  OTHER
+}
+
+enum ProjectStatus {
+  DRAFT
+  PENDING_VALIDATION
+  APPROVED
+  REJECTED
+}
+
+enum ValidationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Models
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  fullName      String
+  role          Role
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  projects      Project[]
+  validations   Validation[]  @relation("ValidatorToValidation")
+  transactions  Transaction[]
+}
+
+model Project {
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  location        String
+  type            ProjectType
+  pricePerCredit  Decimal          @db.Decimal(12, 2)
+  status          ProjectStatus    @default(DRAFT)
+  estimatedCredits Int              @default(0)
+  approvedCredits Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  creatorId       String
+  creator         User             @relation(fields: [creatorId], references: [id])
+  validations     Validation[]
+  creditLedger    CreditLedger?
+  transactions    Transaction[]
+}
+
+model Validation {
+  id          String           @id @default(cuid())
+  status      ValidationStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime         @default(now())
+  decidedAt   DateTime?
+
+  // Relations
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id])
+
+  validatorId String?
+  validator   User?            @relation("ValidatorToValidation", fields: [validatorId], references: [id])
+}
+
+model CreditLedger {
+  id           String   @id @default(cuid())
+  totalIssued  Int      @default(0)
+  totalSold    Int      @default(0)
+  remaining    Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  projectId    String   @unique
+  project      Project  @relation(fields: [projectId], references: [id])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  credits     Int
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  totalPrice  Decimal  @db.Decimal(14, 2)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  buyerId     String
+  buyer       User     @relation(fields: [buyerId], references: [id])
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+}
