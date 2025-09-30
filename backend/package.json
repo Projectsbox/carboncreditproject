@@ -23,9 +23,7 @@
     "@types/node": "^24.5.2",
     "prisma": "^6.16.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2",
-      "type": "module"
-
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
