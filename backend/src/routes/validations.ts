@@ -19,6 +19,9 @@ const decisionSchema = z.object({
 
 validationsRouter.post('/:projectId/decide', authenticateJwt, requireRoles(['VALIDATOR', 'ADMIN']), async (req, res) => {
   const { projectId } = req.params;
+
+  if (!projectId) return res.status(400).json({ error: 'ProjectId is required' });
+
   const parsed = decisionSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
   const { status, notes, approvedCredits } = parsed.data;
@@ -30,14 +33,14 @@ validationsRouter.post('/:projectId/decide', authenticateJwt, requireRoles(['VAL
 
   const result = await prisma.$transaction(async (tx) => {
     const validation = await tx.validation.create({
-      data: {
-        projectId,
-        status,
-        notes,
-        validatorId: req.user!.id,
-        decidedAt: new Date(),
-      },
-    });
+  data: {
+    projectId: projectId,
+    status,
+    notes: notes ?? null,
+    validatorId: req.user!.id,
+    decidedAt: new Date(),
+  },
+});
 
     const updatedProject = await tx.project.update({
       where: { id: projectId },
@@ -49,8 +52,9 @@ validationsRouter.post('/:projectId/decide', authenticateJwt, requireRoles(['VAL
 
     if (isApprove) {
       const creditsToIssue = approvedCredits ?? project.estimatedCredits;
+
       await tx.creditLedger.update({
-        where: { projectId },
+        where: { projectId: projectId }, // ensure projectId is unique in schema
         data: {
           totalIssued: { increment: creditsToIssue },
           remaining: { increment: creditsToIssue },
@@ -63,5 +67,6 @@ validationsRouter.post('/:projectId/decide', authenticateJwt, requireRoles(['VAL
 
   res.json(result);
 });
+
 
 

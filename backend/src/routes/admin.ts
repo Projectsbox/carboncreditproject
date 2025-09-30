@@ -82,21 +82,21 @@ adminRouter.get('/timeseries', async (_req, res) => {
   const salesByMonth: Record<string, { credits: number; revenue: number }> = Object.fromEntries(months.map(m => [m, { credits: 0, revenue: 0 }]));
 
   approvals.forEach(a => {
-    const k = key(new Date(a.decidedAt!));
-    if (k in issuanceByMonth) {
-      issuanceByMonth[k] += a.project?.approvedCredits ?? 0;
-    }
-  });
-  sales.forEach(s => {
-    const k = key(new Date(s.createdAt));
-    if (k in salesByMonth) {
-      salesByMonth[k].credits += s.credits;
-      salesByMonth[k].revenue += Number(s.totalPrice);
-    }
-  });
+  const k = key(new Date(a.decidedAt!));
+  if (issuanceByMonth[k] !== undefined) {
+    issuanceByMonth[k] = (issuanceByMonth[k] ?? 0) + (a.project?.approvedCredits ?? 0);
+  }
+});
 
-  const data = months.map(m => ({ month: m, approvedCredits: issuanceByMonth[m], soldCredits: salesByMonth[m].credits, revenue: salesByMonth[m].revenue }));
-  res.json({ data });
+sales.forEach(s => {
+  const k = key(new Date(s.createdAt));
+  if (salesByMonth[k] !== undefined) {
+    salesByMonth[k].credits = (salesByMonth[k]?.credits ?? 0) + s.credits;
+    salesByMonth[k].revenue = (salesByMonth[k]?.revenue ?? 0) + Number(s.totalPrice ?? 0);
+  }
+});
+
+const data = months.map(m => ({ month: m, approvedCredits: issuanceByMonth[m], soldCredits: salesByMonth[m]?.credits, revenue: salesByMonth[m]?.revenue }));  res.json({ data });
 });
 
 
