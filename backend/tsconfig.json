@@ -45,5 +45,7 @@
     "skipLibCheck": true,
 
     "resolveJsonModule": true,
-  }
+  },
+    "include": ["src/**/*", "src/generated/prisma/**/*"]
+
 }
